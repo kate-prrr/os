@@ -1,0 +1,91 @@
+#include <iostream>
+#include <iomanip>
+#include <windows.h>
+#include <string>
+
+
+using namespace std;
+
+void mWinAPI();
+
+DWORD WINAPI lpStartAddress(LPVOID);
+
+
+const long N = 100000000;
+const long BLOCK_SIZE = 9307370;
+
+DWORD tlsIndex;
+
+CRITICAL_SECTION CriticalSection;
+
+double totalPi = 0;
+DWORD qThreads = 0;
+HANDLE* threadArray;
+
+int main() {
+    mWinAPI();
+}
+
+void mWinAPI() {
+    cout << "\nNumber threads: ";
+    cin >> qThreads;
+
+    threadArray = new HANDLE[qThreads];
+    DWORD* lpThreadId = new DWORD[qThreads];
+
+    tlsIndex = TlsAlloc();
+
+    InitializeCriticalSection(&CriticalSection);
+
+    for (int i = 0; i < qThreads; ++i)
+        threadArray[i] = CreateThread(nullptr, 0, lpStartAddress, new long{ i * BLOCK_SIZE }, CREATE_SUSPENDED, lpThreadId + i);
+
+    unsigned int start = GetTickCount();
+
+    for (int i = 0; i < qThreads; ++i)
+        ResumeThread(threadArray[i]);
+
+    WaitForMultipleObjects(qThreads, threadArray, TRUE, INFINITE);
+
+    unsigned int end = GetTickCount();
+
+    cout << "\n\tpi: " << setprecision(10) << totalPi;
+    cout << "\n\tTime: " << end - start << "ms\n";
+
+
+}
+
+DWORD WINAPI lpStartAddress(LPVOID lpParameter) {
+    long InitProgress = *(reinterpret_cast<long*>(lpParameter));
+    long Progress = InitProgress;
+    double tlPi = 0;
+
+    TlsSetValue(tlsIndex, (LPVOID)&tlPi);
+
+    bool end = false;
+
+    for (int i = 1; !end; ++i) {double xi = 0;
+        double pi = 0;
+
+        for (long i = Progress; i < Progress + BLOCK_SIZE && i < N; ++i) {
+            xi = (i + 0.5) * (1.0 / N);
+            pi += ((4.0 / (1.0 + xi * xi)) * (1.0 / N));
+        }
+
+        tlPi=pi;
+        TlsSetValue(tlsIndex, (LPVOID)&tlPi);
+        EnterCriticalSection(&CriticalSection);
+
+
+        totalPi += tlPi;
+        Progress = qThreads * BLOCK_SIZE * i + InitProgress;
+        if (Progress >= N)
+            end = true;
+
+        LeaveCriticalSection(&CriticalSection);
+    }
+
+    return 0;
+}
+
+
