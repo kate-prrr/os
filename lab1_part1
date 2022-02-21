@@ -16,8 +16,7 @@ void Menu() {
 void InfoFile(){
     int n;
     char ch[4];
-    DWORD dw = GetLogicalDrives();//Если функция вызвана правильно, то она возвращает число-битовую маску в которой
-	храняться все доступные диски
+    DWORD dw = GetLogicalDrives();
     for (int i = 0; i < 26; i++){
         n = (dw >> i) & 1;
         if (n){
@@ -140,7 +139,8 @@ void InfoDisk(){
     cout << "Select a disk:(C:\\\\" << endl;
     cin >> select_disk;
     name =  (LPCWSTR) (select_disk.c_str());
-    x = GetDriveType((LPCSTR) (name));
+    x = GetDriveType((LPCSTR) (name)); //Если функция вызвана правильно, то она возвращает число-битовую маску в которой
+	храняться все доступные диски 
 
     if ( x == DRIVE_UNKNOWN )
         cout << "DRIVE UNKNOWN" << endl; // Тип диска определить невозможно.
@@ -158,7 +158,8 @@ void InfoDisk(){
         cout << "DRIVE RAMDISK" << endl; // Накопитель представляет собой ОЗУ.
 
 
-    GetVolumeInformationFlag = GetVolumeInformationA(
+    GetVolumeInformationFlag = GetVolumeInformationA( //возвращает информацию о файловой системе и 
+	дисках( директориях )
             (LPCSTR) (name),
             lpVolumeNameBuffer,
             nVolumeNameSize,
@@ -169,7 +170,8 @@ void InfoDisk(){
             nFileSystemNameSize
     );
 
-    if(GetVolumeInformationFlag != 0)
+    if(GetVolumeInformationFlag != 0)//правильно ли вызвана функция (возвращает информацию о файловой системе и 
+	дисках( директориях ))
     {
         cout << "Volume Name is " << lpVolumeNameBuffer << endl;
         cout << "Volume Serial Number is " << lpVolumeSerialNumber << endl;
@@ -177,14 +179,16 @@ void InfoDisk(){
     }
     else cout << "Not Present (GetVolumeInformation)" << endl;
 
-    GetDiskFreeSpaceFlag = GetDiskFreeSpaceEx(
+    GetDiskFreeSpaceFlag = GetDiskFreeSpaceEx(//выдаёт информацию о доступном месте на диске.
+
             (LPCSTR) (name), // directory name
             (PULARGE_INTEGER)&FreeBytesAvailable,     // bytes available to caller
             (PULARGE_INTEGER)&TotalNumberOfBytes,     // bytes on disk
             (PULARGE_INTEGER)&TotalNumberOfFreeBytes  // free bytes on disk
     );
 
-    if(GetDiskFreeSpaceFlag != 0)
+    if(GetDiskFreeSpaceFlag != 0)//если вызвана правильно то срабатывает (выдаёт информацию о доступном месте на диске.
+)
     {
         cout << "Total Number Of Free Bytes = " << TotalNumberOfFreeBytes
              << "( " <<  ((long double)((TotalNumberOfFreeBytes)))/1024/1024/1024
