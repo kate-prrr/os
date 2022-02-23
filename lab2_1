@@ -163,7 +163,8 @@ void Protect(){
 
     cout << "Input address ( 0 - Auto ), 0X000... :  "<< endl;
     cin >> address;
-    p = VirtualAlloc(address, dwSize, MEM_COMMIT, PAGE_EXECUTE_READWRITE);
+    p = VirtualAlloc(address, dwSize, MEM_COMMIT, PAGE_EXECUTE_READWRITE);//address задает начальный адрес. При этом адрес округляется до ближайшей границы блока размером 64 Кбайт.
+    
     if( p == 0 ) {
         cout << " Memory no highlighted! " << endl;
         return;
