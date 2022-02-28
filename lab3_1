@@ -14,7 +14,6 @@ DWORD WINAPI lpStartAddress(LPVOID);
 const long N = 100000000;
 const long BLOCK_SIZE = 9307370;
 
-DWORD tlsIndex;
 
 CRITICAL_SECTION CriticalSection;
 
@@ -33,7 +32,6 @@ void mWinAPI() {
     threadArray = new HANDLE[qThreads];
     DWORD* lpThreadId = new DWORD[qThreads];
 
-    tlsIndex = TlsAlloc();
 
     InitializeCriticalSection(&CriticalSection);
 
@@ -60,7 +58,6 @@ DWORD WINAPI lpStartAddress(LPVOID lpParameter) {
     long Progress = InitProgress;
     double tlPi = 0;
 
-    TlsSetValue(tlsIndex, (LPVOID)&tlPi);
 
     bool end = false;
 
@@ -73,7 +70,6 @@ DWORD WINAPI lpStartAddress(LPVOID lpParameter) {
         }
 
         tlPi=pi;
-        TlsSetValue(tlsIndex, (LPVOID)&tlPi);
         EnterCriticalSection(&CriticalSection);
 
 
