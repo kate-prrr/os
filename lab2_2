@@ -28,13 +28,13 @@ int main()
     Map = CreateFileSt();
     if( Map != NULL){
         cout << "File Maping Access!" << endl;
-        Map_1 = MapViewOfFile(Map, FILE_MAP_WRITE, 0, 0, 0);
+        Map_1 = MapViewOfFile(Map, FILE_MAP_WRITE, 0, 0, 0);//возвращает указатель на представление файла
         if(Map_1 == 0 ) cout << "File not projected!" << endl;
         else{
             cout << "The file is projected!" << endl;
             CopyMemory(Map_1, TEXT("TEXT"), 5);
             system("pause");
-            UnmapViewOfFile(Map_1);
+            UnmapViewOfFile(Map_1);//отменяет отображение представления файла из адресного пространства вызывающего процесса
             cout << "Data recorded!" << endl;
         }
     }
