@@ -1,87 +1,78 @@
 #include <iostream>
-#include <iomanip>
 #include <windows.h>
-#include <string>
-
-
+#include <iomanip>
+#include <ctime>
 using namespace std;
 
-void mWinAPI();
+#define THREADS_NUMBER 1
+HANDLE hThreads[THREADS_NUMBER];
 
-DWORD WINAPI lpStartAddress(LPVOID);
+int n = 100000000;
+int stepSize = 930710;
+int maxSteps = n / stepSize + 1;
+double pi = 0;
+volatile long int stepNum = THREADS_NUMBER;
+
+std::atomic<double> pi{0};
 
 
-const long N = 100000000;
-const long BLOCK_SIZE = 9307370;
+DWORD WINAPI ThreadFunc(LPVOID lpParameter)
+{
+	double Pi = 0;
+	int numberOfCurThread = (int)lpParameter;
+	while (true)
+	{
+		int start = numberOfCurThread * stepSize;
+		int end = (numberOfCurThread + 1) * stepSize < n ? (numberOfCurThread + 1) * stepSize : n;
+		for (int i = start; i < end; i++)
+		{
+			long double x = (i + 0.5) / n;
+			Pi += 4 / (1 + x * x);
+		}
+		numberOfCurThread = InterlockedExchangeAdd(&stepNum, 1);
+		if (stepNum > maxSteps)
+			break;
+		SuspendThread(hThreads[(int)lpParameter]);
+	}
 
-
-CRITICAL_SECTION CriticalSection;
-
-double totalPi = 0;
-DWORD qThreads = 0;
-HANDLE* threadArray;
-
-int main() {
-    mWinAPI();
+    while (!pi.compare_exchange_weak(pi, pi + Pi))
+	return 0;
 }
 
-void mWinAPI() {
-    cout << "\nNumber threads: ";
-    cin >> qThreads;
-
-    threadArray = new HANDLE[qThreads];
-    DWORD* lpThreadId = new DWORD[qThreads];
 
 
-    InitializeCriticalSection(&CriticalSection);
+int main()
+{
+	cout << "Количество потоков: " << THREADS_NUMBER << endl << endl;
 
-    for (int i = 0; i < qThreads; ++i)
-        threadArray[i] = CreateThread(nullptr, 0, lpStartAddress, new long{ i * BLOCK_SIZE }, CREATE_SUSPENDED, lpThreadId + i);
+	for (int i = 0; i < THREADS_NUMBER; i++)
+		hThreads[i] = CreateThread(0, 0, ThreadFunc, (void*)i, CREATE_SUSPENDED, 0);
+                        // дескриптор защиты
+                        // начальный размер стека
+                        // функция потока
+                        // параметр потока
+                        // опции создания
+                        // идентификатор потока
 
-    unsigned int start = GetTickCount();
+	double start = GetTickCount();
 
-    for (int i = 0; i < qThreads; ++i)
-        ResumeThread(threadArray[i]);
+	while (stepNum < maxSteps)
+		for (int i = 0; i < THREADS_NUMBER; i++)
+			ResumeThread(hThreads[i]);
 
-    WaitForMultipleObjects(qThreads, threadArray, TRUE, INFINITE);
+	cout << "";
+	
+	for (int i = 0; i < THREADS_NUMBER; i++)
+		ResumeThread(hThreads[i]);
+	
+	WaitForMultipleObjects(THREADS_NUMBER, hThreads, TRUE, INFINITE);
 
-    unsigned int end = GetTickCount();
-
-    cout << "\n\tpi: " << setprecision(10) << totalPi;
-    cout << "\n\tTime: " << end - start << "ms\n";
-
-
+	double end = GetTickCount();
+	
+	cout << "Время " << end - start << " мс" << endl << endl;
+	cout << setprecision(100) << pi / n << endl;
+	for (int i = 0; i < THREADS_NUMBER; i++)
+		CloseHandle(hThreads[i]);
+	return 0;
 }
-
-DWORD WINAPI lpStartAddress(LPVOID lpParameter) {
-    long InitProgress = *(reinterpret_cast<long*>(lpParameter));
-    long Progress = InitProgress;
-    double tlPi = 0;
-
-
-    bool end = false;
-
-    for (int i = 1; !end; ++i) {double xi = 0;
-        double pi = 0;
-
-        for (long i = Progress; i < Progress + BLOCK_SIZE && i < N; ++i) {
-            xi = (i + 0.5) * (1.0 / N);
-            pi += ((4.0 / (1.0 + xi * xi)) * (1.0 / N));
-        }
-
-        tlPi=pi;
-        EnterCriticalSection(&CriticalSection);
-
-
-        totalPi += tlPi;
-        Progress = qThreads * BLOCK_SIZE * i + InitProgress;
-        if (Progress >= N)
-            end = true;
-
-        LeaveCriticalSection(&CriticalSection);
-    }
-
-    return 0;
-}
-
 
