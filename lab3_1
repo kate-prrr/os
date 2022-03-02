@@ -7,9 +7,9 @@ using namespace std;
 #define THREADS_NUMBER 1
 HANDLE hThreads[THREADS_NUMBER];
 
-int n = 100000000;
-int stepSize = 930710;
-int maxSteps = n / stepSize + 1;
+int n = 100000000;//количество операций котторое производим с пи
+int stepSize = 9307010;//размер блока для потока
+int maxSteps = n / stepSize + 1;//количество блоков которые выполнякт поток
 double pi = 0;
 volatile long int stepNum = THREADS_NUMBER;
 
@@ -19,11 +19,11 @@ std::atomic<double> pi{0};
 DWORD WINAPI ThreadFunc(LPVOID lpParameter)
 {
 	double Pi = 0;
-	int numberOfCurThread = (int)lpParameter;
+	int numberOfCurThread = (int)lpParameter;//индетификатор потока
 	while (true)
 	{
 		int start = numberOfCurThread * stepSize;
-		int end = (numberOfCurThread + 1) * stepSize < n ? (numberOfCurThread + 1) * stepSize : n;
+		int end = (numberOfCurThread + 1) * stepSize < n ? (numberOfCurThread + 1) * stepSize : n;//
 		for (int i = start; i < end; i++)
 		{
 			long double x = (i + 0.5) / n;
@@ -32,7 +32,7 @@ DWORD WINAPI ThreadFunc(LPVOID lpParameter)
 		numberOfCurThread = InterlockedExchangeAdd(&stepNum, 1);
 		if (stepNum > maxSteps)
 			break;
-		SuspendThread(hThreads[(int)lpParameter]);
+		SuspendThread(hThreads[(int)lpParameter]);//поток приостанавливается
 	}
 
     while (!pi.compare_exchange_weak(pi, pi + Pi))
@@ -58,7 +58,7 @@ int main()
 
 	while (stepNum < maxSteps)
 		for (int i = 0; i < THREADS_NUMBER; i++)
-			ResumeThread(hThreads[i]);
+			ResumeThread(hThreads[i]);//режим ожидания 
 
 	cout << "";
 
